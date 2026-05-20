@@ -1,16 +1,73 @@
+Subject: SurveyJS Analytics + Tabulator rowSelection column causing duplicate/phantom columns
 
-::ng-deep .tabulator-col.tabulator-row-header,
-::ng-deep .tabulator-cell.tabulator-row-header {
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-}
+Hello SurveyJS Team,
 
-::ng-deep .tabulator-row-header-holder {
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-}
+We are using SurveyJS Analytics Tabulator integration in our Angular application.
+
+Issue Summary:
+When implementing row selection checkboxes in the Tabulator table, we are seeing unexpected extra/phantom columns being rendered.
+
+Environment:
+
+* Angular 19
+* survey-analytics
+* survey-core
+* survey.analytics.tabulator
+* Tabulator integration through SurveyJS Analytics
+
+Current Behavior:
+We configured row selection using a custom checkbox column:
+
+```ts
+const checkboxCol: ColumnDefinition = {
+  title: 'rowSelection',
+  field: 'rowSelection',
+  formatter: 'rowSelection',
+  titleFormatter: 'rowSelection',
+  hozAlign: 'center',
+  headerHozAlign: 'center',
+  minWidth: 70,
+  maxWidth: 70,
+  download: false,
+  headerSort: false,
+};
+```
+
+and later:
+
+```ts
+table.setColumns([checkboxCol, ...existingDefs]);
+```
+
+Problem:
+
+* An additional empty row-header column appears on the left.
+* If we hide `.tabulator-row-header`, the table layout shifts and a phantom empty space/column appears on the right side.
+* Header checkbox selection sometimes works inconsistently depending on whether `rowHeader` is configured.
+* It appears SurveyJS internally creates its own row-header placeholder column, which conflicts with manually added rowSelection columns.
+
+We also tried:
+
+* Using only `rowHeader`
+* Using only custom checkbox column
+* Hiding `.tabulator-row-header`
+* Collapsing width instead of `display:none`
+* Removing frozen columns
+* Resetting margins/flex widths
+
+But the table layout still becomes inconsistent.
+
+Questions:
+
+1. What is the officially supported approach for enabling row selection checkboxes in SurveyJS Analytics Tabulator?
+2. Should consumers use `rowHeader` OR manually prepend a `rowSelection` column?
+3. Is `table.setColumns()` supported after SurveyJS initializes the table?
+4. Is there an internal placeholder/frozen column intentionally added by SurveyJS?
+5. What is the recommended way to avoid duplicate/phantom columns?
+
+Attached:
+
+* Screenshots showing the extra empty columns
+* Current implementation details
+
+Thank you.
