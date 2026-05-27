@@ -1,112 +1,50 @@
 Hello Team,
 
-Thank you for the previous guidance and sample project.
+Thank you for the clarification.
 
-We updated our implementation to use the built-in SurveyJS Tabulator extensions instead of manually injecting a checkbox column.
+Our primary use case is bulk actions on selected rows.
 
-Current behavior:
+Expected workflow:
 
-* The empty leading column issue is resolved.
-* "Remove rows" action appears correctly.
-* However, the row selection checkboxes and header checkbox are not rendering.
-* We also cannot display the "All" label in the header because the checkbox/header formatter itself is not appearing.
+* Users can select individual rows using row checkboxes.
+* Users can also use the header checkbox to select all rows on the current page.
+* Once rows are selected, actions such as:
 
-We are trying to use the built-in row selection extension exactly as suggested.
+  * Delete selected rows
+  * Export selected rows
+  * Future bulk operations
+    should become enabled.
 
-Below is the simplified implementation (business logic removed).
+Selection behavior expectations:
 
-TypeScript:
+* Selection should work page-by-page visually.
+* However, selections should persist across pagination.
+  Example:
 
-```ts
-import { Tabulator, TableExtensions } from 'survey-analytics/survey.analytics.tabulator';
+  * User selects 3 rows on page 1
+  * Navigates to page 2 and selects 2 more rows
+  * Total selected rows should be 5
+  * Bulk actions should apply to all selected rows across pages
 
-private renderDataTable(form: Model, formResults: NonNullable<unknown>[]) {
+We do not need a full dataset select-all behavior at this time. Current-page selection is sufficient for the header checkbox.
 
-  const rowSelectExt = TableExtensions.findExtension('row', 'select');
-  const rowDetailsExt = TableExtensions.findExtension('row', 'details');
+Currently:
 
-  if (rowSelectExt) {
-    rowSelectExt.visibleIndex = 0;
-  }
+* We can render the “Remove rows” action successfully.
+* The previous phantom/duplicate column issue is resolved.
+* However, we are still unable to render:
 
-  if (rowDetailsExt) {
-    rowDetailsExt.visibleIndex = 1;
-  }
+  * row checkboxes
+  * header select-all checkbox
+* We currently only see “...” in the first column.
 
-  const removeRowsExt = TableExtensions.findExtension('header', 'removerows');
+We would appreciate guidance on:
 
-  if (removeRowsExt) {
-    removeRowsExt.visibleIndex = 5;
-  }
+1. The recommended approach for implementing persistent row selection across pagination using SurveyJS Tabulator
+2. Whether the built-in row selection extension supports this scenario
+3. How to properly render a header select-all checkbox for current-page selection
+4. Whether custom Tabulator rowSelection formatter integration is recommended for this workflow
 
-  const tabulatorConfiguration = {
-    tabulatorOptions: {
-      selectable: true,
-      selectablePersistence: false,
-      tooltipsHeader: false,
-      columnDefaults: { tooltip: false },
-    },
-  };
 
-  this.formDataTable = new Tabulator(
-    form,
-    formResults,
-    tabulatorConfiguration
-  );
 
-  this.formDataTable.render('form-results-data-table');
-
-  this.tabulatorTables = this.formDataTable.tabulatorTables;
-
-  this.tabulatorTables.on('tableBuilt', () => {
-    const table = this.tabulatorTables;
-
-    table.setSort([
-      {
-        column: 'Submission Date/Time',
-        dir: 'desc',
-      },
-    ]);
-
-    table.on('rowSelectionChanged', () => {
-      console.log('selection changed');
-    });
-  });
-}
-```
-
-CSS:
-
-```scss
-::ng-deep .sa-tabulator__header {
-  overflow: visible;
-}
-
-::ng-deep .tabulator .tabulator-row:not(:hover) {
-  background-color: transparent !important;
-}
-
-::ng-deep .tabulator .tabulator-tableholder {
-  height: 100% !important;
-}
-```
-
-Observed behavior:
-
-* First empty column issue is fixed
-* "Remove rows" button is visible
-* But checkbox column is not rendered
-* Header checkbox is also missing
-* We only see "..." in the first column
-
-Questions:
-
-1. Are we missing any required Tabulator configuration for the built-in row selection extension?
-2. Is there a required extension registration/init order?
-3. Is the built-in checkbox column compatible with custom render hooks like overriding render()?
-4. Is there a minimal required CSS for the row selection extension to render correctly?
-5. Does SurveyJS expect a specific Tabulator version for this feature?
-
-We also attached a screenshot of the current behavior.
-
-Thank you.
+Thank you for your support.
