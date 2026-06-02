@@ -1,80 +1,57 @@
-Step 1 - Give the Agent a Validation Task
+Story 357272 - Delete User Function
 
-In pam-backend, use this prompt:
-Story: 357272 - Delete User Function
+The existing delete endpoints were originally intended for this functionality and should be reused.
 
-Before implementing anything, validate whether an existing Delete User API already satisfies this story.
-
-Analyze:
-
-1. Existing delete/deactivate user API endpoint(s)
-2. Controller, Service and Repository flow
-3. Authorization logic
-4. User status update logic
-5. Portal assignment validation
-6. Existing tests
-
-Compare implementation against story requirements:
-
-AC1:
-Portal Admin can delete Portal Users assigned to their portal.
-
-AC2:
-Portal Admin can delete Portal Admins assigned to their portal.
-
-AC3:
-Portal Agent can delete Portal Users from any portal.
-
-AC4:
-Portal Agent can delete Portal Admins from any portal.
-
-AC5:
-Deleted users should not appear in user list.
-
-AC6:
-User should be deactivated (inactive status) rather than physically deleted.
-
-Output ONLY:
-
-- Requirement
-- Current implementation
-- Meets requirement (Yes/No)
-- Gap if any
-
-Do NOT generate code.
-Do NOT modify files.
-
-Step 2 - Ask Agent to Generate a Gap Analysis
-
-If the first analysis looks good:
-Based on your analysis, identify the minimal set of code changes required to fully satisfy Story 357272.
+Proceed with implementation using the existing controllers, services and repositories.
 
 Requirements:
 
-- Reuse existing Delete API.
-- Do not create new endpoints if existing endpoint can be extended.
-- Minimize code changes.
-- Follow existing architecture.
-- List exact files requiring modification.
-- Explain why each modification is required.
+1. Reuse existing endpoints.
+2. Do not create new delete APIs.
+3. Convert hard delete behavior to soft delete:
+   - Set user status to INACTIVE.
+   - Persist changes.
+   - Do not remove records.
 
-Do NOT generate code yet.
+4. Authorization rules:
 
-Step 3 - Only Then Implement
-After you verify the gap analysis:
+Portal Admin:
+- Can delete Portal Users assigned to their portal.
+- Can delete Portal Admins assigned to their portal.
+- Cannot delete users outside their assigned portals.
 
-Implement only the identified gaps for Story 357272.
+Portal Agent:
+- Can delete Portal Users from any portal.
+- Can delete Portal Admins from any portal.
 
-Constraints:
+5. Ensure inactive users do not appear in user listing/search APIs.
 
-- Reuse existing Delete API.
-- No new architecture.
-- No refactoring unrelated code.
-- Add tests only for impacted functionality.
-- Preserve all existing behavior.
-- Ensure all existing tests pass.
+6. Reuse existing permission framework and authorization patterns already present in the codebase.
 
-Provide:
-- Files changed
-- Tests added
-- Coverage impact
+7. Minimize code changes.
+8. Do not refactor unrelated code.
+9. Preserve existing API contracts.
+10. Add or update unit tests only where necessary.
+
+Before coding:
+Provide a concise implementation plan listing:
+- Files to modify
+- Reason for modification
+- Risk level
+
+Then implement the changes.
+
+One More Important Prompt
+
+Before allowing the agent to code, I would force it to identify all impacted read paths:
+Before implementation, identify all APIs, services and repository queries that return users.
+
+Determine which locations must exclude INACTIVE users after soft delete is introduced.
+
+Output:
+- File
+- Method
+- Existing filter logic
+- Required change
+
+Then proceed with implementation.
