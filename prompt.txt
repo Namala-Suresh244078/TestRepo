@@ -1,110 +1,80 @@
-Use this prompt first.
-Story: Manage Portals - Update Portal Admin Assignment
+Step 1 - Give the Agent a Validation Task
 
-Repository:
-pam-frontend
+In pam-backend, use this prompt:
+Story: 357272 - Delete User Function
 
-Analysis only.
+Before implementing anything, validate whether an existing Delete User API already satisfies this story.
 
-Find:
+Analyze:
 
-1. Existing screens:
-   - Portal management
-   - Portal Admin assignment
-   - Portal User assignment
+1. Existing delete/deactivate user API endpoint(s)
+2. Controller, Service and Repository flow
+3. Authorization logic
+4. User status update logic
+5. Portal assignment validation
+6. Existing tests
 
-2. Existing services calling backend APIs.
+Compare implementation against story requirements:
 
-3. Existing permission model:
-   - Portal Agent
-   - Portal Admin
+AC1:
+Portal Admin can delete Portal Users assigned to their portal.
 
-4. Existing reusable UI components:
-   - User search
-   - Assignment dialog
-   - Multi-select controls
-   - Data tables
+AC2:
+Portal Admin can delete Portal Admins assigned to their portal.
 
-5. Existing route and module structure.
+AC3:
+Portal Agent can delete Portal Users from any portal.
+
+AC4:
+Portal Agent can delete Portal Admins from any portal.
+
+AC5:
+Deleted users should not appear in user list.
+
+AC6:
+User should be deactivated (inactive status) rather than physically deleted.
+
+Output ONLY:
+
+- Requirement
+- Current implementation
+- Meets requirement (Yes/No)
+- Gap if any
 
 Do NOT generate code.
+Do NOT modify files.
 
-Provide:
-- Files involved
-- Recommended implementation approach
-- API endpoints currently used
+Step 2 - Ask Agent to Generate a Gap Analysis
 
-Wait for approval.
-
-Next step - Frontend Implementation
-Implement Portal Admin Assignment enhancement.
+If the first analysis looks good:
+Based on your analysis, identify the minimal set of code changes required to fully satisfy Story 357272.
 
 Requirements:
 
-1. Use existing Angular architecture and coding patterns.
+- Reuse existing Delete API.
+- Do not create new endpoints if existing endpoint can be extended.
+- Minimize code changes.
+- Follow existing architecture.
+- List exact files requiring modification.
+- Explain why each modification is required.
 
-2. Reuse existing:
-   - Components
-   - Services
-   - Models
-   - Guards
-   - Permission checks
+Do NOT generate code yet.
 
-3. Portal Agent:
-   - Can add Portal Admins
-   - Can remove Portal Admins
+Step 3 - Only Then Implement
+After you verify the gap analysis:
 
-4. Portal Admin:
-   - Can add Portal Admins
-   - Can remove Portal Admins
-   - Only for assigned portals
+Implement only the identified gaps for Story 357272.
 
-5. Prevent removing the last Portal Admin.
+Constraints:
 
-6. API remains source of truth for validation.
+- Reuse existing Delete API.
+- No new architecture.
+- No refactoring unrelated code.
+- Add tests only for impacted functionality.
+- Preserve all existing behavior.
+- Ensure all existing tests pass.
 
-7. Display API validation errors using existing application pattern.
-
-8. Add:
-   - Unit tests
-   - Component tests
-   - Service tests where project already follows that pattern
-
-9. Maintain:
-   - Existing UI behavior
-   - Existing styling
-   - Existing accessibility standards
-
-10. Do not introduce new libraries.
-
-Deliver:
-- Files modified
-- Test coverage added
-- Screens impacted
-
-Final "Quality Gate" Prompt (Very Valuable)
-Run this after both stories are implemented.
-
-Perform a final review of all changes in current branch.
-
-Check:
-
-1. Story requirements fully satisfied.
-2. No unrelated files modified.
-3. No dead code introduced.
-4. No duplicate logic introduced.
-5. Existing coding standards followed.
-6. Existing authorization model preserved.
-7. Unit tests passing.
-8. Existing tests passing.
-9. Sonar issues introduced.
-10. Potential security concerns.
-11. Potential performance concerns.
-
-Produce:
-
-- Risk assessment
-- Missing scenarios
-- Suggested improvements
-
-Do not make code changes unless defects are found.
+Provide:
+- Files changed
+- Tests added
+- Coverage impact
