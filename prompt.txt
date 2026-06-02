@@ -1,50 +1,32 @@
-Hello Team,
+Story: Implement Delete User functionality for Portal Users and Portal Admins.
 
-Thank you for the clarification.
+Repository:
+pam-backend
 
-Our primary use case is bulk actions on selected rows.
+IMPORTANT:
+Before making any code changes, perform analysis only and provide:
 
-Expected workflow:
+1. Existing APIs used for:
+   - Add Portal User
+   - Update Portal User
+   - Manage Portal Admin assignment
+   - Non-portal user delete/deactivate functionality
 
-* Users can select individual rows using row checkboxes.
-* Users can also use the header checkbox to select all rows on the current page.
-* Once rows are selected, actions such as:
+2. List:
+   - Controller classes
+   - Service classes
+   - Repository classes
+   - Security/authorization classes
+   involved in user management.
 
-  * Delete selected rows
-  * Export selected rows
-  * Future bulk operations
-    should become enabled.
+3. Explain:
+   - How user status is currently stored.
+   - Whether inactive users are already supported.
+   - Existing role model for:
+        Portal Agent
+        Portal Admin
+        Portal User
 
-Selection behavior expectations:
+Do NOT generate code yet.
 
-* Selection should work page-by-page visually.
-* However, selections should persist across pagination.
-  Example:
-
-  * User selects 3 rows on page 1
-  * Navigates to page 2 and selects 2 more rows
-  * Total selected rows should be 5
-  * Bulk actions should apply to all selected rows across pages
-
-We do not need a full dataset select-all behavior at this time. Current-page selection is sufficient for the header checkbox.
-
-Currently:
-
-* We can render the “Remove rows” action successfully.
-* The previous phantom/duplicate column issue is resolved.
-* However, we are still unable to render:
-
-  * row checkboxes
-  * header select-all checkbox
-* We currently only see “...” in the first column.
-
-We would appreciate guidance on:
-
-1. The recommended approach for implementing persistent row selection across pagination using SurveyJS Tabulator
-2. Whether the built-in row selection extension supports this scenario
-3. How to properly render a header select-all checkbox for current-page selection
-4. Whether custom Tabulator rowSelection formatter integration is recommended for this workflow
-
-
-
-Thank you for your support.
+Wait for approval after analysis.
