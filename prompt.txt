@@ -30,3 +30,76 @@ Before making any code changes, perform analysis only and provide:
 Do NOT generate code yet.
 
 Wait for approval after analysis.
+
+Phase 2 - Backend Implementation Prompt
+
+After reviewing analysis:
+Implement Story 357272 using existing project patterns only.
+
+Requirements:
+
+1. Add Delete User functionality.
+
+2. Do NOT physically delete records.
+
+3. Set user status to inactive.
+
+4. Deleted users must no longer appear in existing user search/list APIs.
+
+5. Authorization:
+
+Portal Admin:
+- Can deactivate Portal Users assigned to their portal.
+- Can deactivate Portal Admins assigned to their portal.
+- Cannot deactivate users from other portals.
+
+Portal Agent:
+- Can deactivate Portal Users from any portal.
+- Can deactivate Portal Admins from any portal.
+
+6. Reuse existing service, repository and authorization patterns already used by the application.
+
+7. Do NOT introduce new frameworks, libraries or architectural patterns.
+
+8. Minimize changes:
+   - Update existing code where possible.
+   - Avoid duplicate logic.
+
+9. Add:
+   - Unit tests
+   - Service tests
+   - Controller tests if project already follows that pattern.
+
+10. Coverage:
+   - Positive cases
+   - Authorization failures
+   - Portal mismatch scenarios
+   - User already inactive
+   - User not found
+
+11. Run all existing tests and ensure no regressions.
+
+Deliverables:
+- Files modified
+- Summary of changes
+- Test coverage added
+- Any assumptions made
+
+Before Running Backend Prompt
+
+Give the agent API references:
+Reference APIs:
+
+Portal User Create:
+<controller/service>
+
+Portal User Update:
+<controller/service>
+
+Portal Admin Assignment:
+<controller/service>
+
+Existing Non-Portal User Delete:
+<controller/service>
+
+Use these implementations as reference.
