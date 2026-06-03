@@ -1,57 +1,121 @@
-Story 357272 - Delete User Function
+Story Investigation - Data Model and User/Portal Relationship Analysis
 
-The existing delete endpoints were originally intended for this functionality and should be reused.
+Before implementing Story 357272, perform a complete data model analysis.
 
-Proceed with implementation using the existing controllers, services and repositories.
+Goal:
+Determine whether setting a user to INACTIVE is logically correct based on how users are associated with portals.
 
-Requirements:
+Analyze:
 
-1. Reuse existing endpoints.
-2. Do not create new delete APIs.
-3. Convert hard delete behavior to soft delete:
-   - Set user status to INACTIVE.
-   - Persist changes.
-   - Do not remove records.
+1. Database schema
 
-4. Authorization rules:
+   * User-related tables
+   * Portal-related tables
+   * Role-related tables
+   * Assignment/mapping tables
 
-Portal Admin:
-- Can delete Portal Users assigned to their portal.
-- Can delete Portal Admins assigned to their portal.
-- Cannot delete users outside their assigned portals.
+2. For each table provide:
 
-Portal Agent:
-- Can delete Portal Users from any portal.
-- Can delete Portal Admins from any portal.
+   * Table name
+   * Primary key
+   * Foreign keys
+   * Purpose
 
-5. Ensure inactive users do not appear in user listing/search APIs.
+3. Generate an Entity Relationship analysis showing:
 
-6. Reuse existing permission framework and authorization patterns already present in the codebase.
+   User
+   Portal
+   Portal Admin
+   Portal User
+   Role
+   UserRole
+   PortalAssignment
 
-7. Minimize code changes.
-8. Do not refactor unrelated code.
-9. Preserve existing API contracts.
-10. Add or update unit tests only where necessary.
+   (or equivalent entities discovered)
 
-Before coding:
-Provide a concise implementation plan listing:
-- Files to modify
-- Reason for modification
-- Risk level
+4. Determine cardinality:
 
-Then implement the changes.
+   * Can one user belong to multiple portals?
+   * Can one user be Portal Admin for multiple portals?
+   * Can one user be Portal User for multiple portals?
+   * Can a portal have multiple admins?
+   * Can a portal have multiple users?
 
-One More Important Prompt
+5. Trace delete APIs:
 
-Before allowing the agent to code, I would force it to identify all impacted read paths:
-Before implementation, identify all APIs, services and repository queries that return users.
+   External User Delete:
 
-Determine which locations must exclude INACTIVE users after soft delete is introduced.
+   * Tables read
+   * Tables updated
+   * Tables deleted
 
-Output:
-- File
-- Method
-- Existing filter logic
-- Required change
+   Internal User Delete:
 
-Then proceed with implementation.
+   * Tables read
+   * Tables updated
+   * Tables deleted
+
+6. Determine actual business meaning of delete:
+
+   Is delete currently:
+
+   * removing a user entirely?
+   * removing a portal assignment?
+   * removing a role assignment?
+   * removing portal access only?
+
+7. Impact Analysis:
+
+   If User.status = INACTIVE:
+
+   * Which portals lose access?
+   * Which roles are affected?
+   * Would access be removed from all portals?
+   * Would this violate existing data relationships?
+
+8. Story Validation:
+
+   Compare the story requirement against the current data model.
+
+   Explicitly answer:
+
+   "Does setting a user to INACTIVE correctly implement removing a user from a portal?"
+
+   If NO:
+   Explain what should actually be updated instead.
+
+Deliverable:
+
+Produce a markdown document named:
+
+DELETE_USER_DATA_MODEL_ANALYSIS.md
+
+Include:
+
+* ER-style relationship diagram (ASCII is fine)
+* Table relationship explanations
+* Cardinality analysis
+* Delete flow analysis
+* Recommendation before implementation
+
+Do not generate code.
+Do not modify files.
+Only analyze and document.
+
+
+After that, ask one more powerful question
+
+Additionally, search for real examples in the database access layer.
+
+Provide examples showing:
+
+User A -> Portal X
+User A -> Portal Y
+
+or evidence that such a relationship is impossible.
+
+Use repository queries, entity mappings, and foreign key relationships as evidence.
+
+Do not speculate.
+
+Only provide conclusions supported by code/schema.
