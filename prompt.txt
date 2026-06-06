@@ -1,121 +1,284 @@
-Story Investigation - Data Model and User/Portal Relationship Analysis
+ask at least Questions 1, 3, 4, 5, 6, 8, and 9.
+1. API Contract
 
-Before implementing Story 357272, perform a complete data model analysis.
+Do the new APIs use the exact same request payloads as existing APIs?
+
+/api/user/internal/create
+/api/user/create
+
+or are new request/response models expected?
+
+This affects backward compatibility.
+
+2. Response Behavior
+
+If existing user is found:
+
+Should response be:
+
+{
+  "status":"UPDATED"
+}
+
+or
+
+{
+  "status":"SUCCESS"
+}
+
+or identical to current create response?
+
+Acceptance criteria does not define response behavior.
+
+3. Role Handling
+
+Story says:
+
+do not delete existing user roles
+
+Need clarification:
+
+Example:
+
+Existing roles:
+
+ROLE_A
+ROLE_B
+
+Request contains:
+
+ROLE_C
+
+Expected result?
+
+ROLE_A
+ROLE_B
+ROLE_C
+
+I assume yes, but should confirm.
+
+4. Contact Handling
+
+Story says:
+
+add contacts if not in DB
+
+Need clarification:
+
+If contact already exists and phone number changes:
+
+Should it:
+
+Update existing contact?
+Add new contact?
+Ignore?
+
+5. Internal User Matching Criteria
+
+How exactly do we determine existing internal user?
+
+By:
+
+
+email?
+
+
+Story only says:
+
+check if internal pam_user already exists
+
+Need precise lookup criteria.
+
+
+6. External User Matching Criteria
+
+Story mentions:
+
+haloIdentity exists
+identityProvider == halo
+externalAccessId matches email
+
+Need confirmation:
+
+Are all conditions required?
+
+Or first match wins?
+
+Example:
+
+email match
+identity provider mismatch
+
+Should that be considered existing user?
+
+7. Multiple Matches
+
+What if multiple people satisfy lookup criteria?
+
+Example:
+
+2 halo identities
+same email
+
+Should:
+
+fail?
+choose newest?
+choose active?
+
+Need business rule.
+
+8. Pending Halo Record
+
+Story mentions:
+
+PENDING_HALO_ATTACH
+
+Need clarification:
+
+If existing person is in pending state:
+
+should we update?
+activate?
+create new?
+error?
+
+9. Registration Email
+
+Story says:
+
+Do NOT re-trigger registration email
+
+Questions:
+
+For existing user:
+
+Never send email?
+Send only when portal assignment added?
+Send when role added?
+
+Need explicit rule.
+
+10. Portal Assignment
+
+When user exists but portal assignment doesn't:
+
+Should system:
+
+create portal assignment
+
+automatically?
+
+Story implies yes but not explicitly stated.
+
+11. Authorization
+
+Story mentions permissions:
+
+Internal:
+
+INTERNAL_USERS/ADMIN_MANAGEMENT/EDIT
+PORTAL_AGENT_ACTIONS/PORTALS/EDIT
+PORTAL_ADMIN_ACTIONS/PORTALS/EDIT
+
+External:
+
+OVERVIEW/USERS/EDIT
+PORTAL_AGENT_ACTIONS/PORTALS/EDIT
+PORTAL_ADMIN_ACTIONS/PORTALS/EDIT
+
+Need confirmation:
+
+Should permission validation be copied exactly from existing APIs?
+
+Or new permission logic?
+
+
+Spec Agent Prompt
+
+Use this prompt with your Spec/Copilot Agent.
+
+Analyze the existing implementation before proposing any code changes.
 
 Goal:
-Determine whether setting a user to INACTIVE is logically correct based on how users are associated with portals.
+Implement two new upsert APIs:
 
-Analyze:
+1. /api/user/internal/upsert
+2. /api/user/upsert
 
-1. Database schema
+Constraints:
 
-   * User-related tables
-   * Portal-related tables
-   * Role-related tables
-   * Assignment/mapping tables
+* Reuse existing project architecture, patterns, services, repositories, DTOs, entities, validation, security, and transaction handling.
+* Do not introduce new frameworks, libraries, persistence approaches, or architectural patterns.
+* Do not assume requirements that are not explicitly present in the story.
+* If any requirement is ambiguous, identify it as a clarification item instead of inventing behavior.
 
-2. For each table provide:
+Tasks:
 
-   * Table name
-   * Primary key
-   * Foreign keys
-   * Purpose
+1. Identify current implementations of:
 
-3. Generate an Entity Relationship analysis showing:
+   * /api/user/internal/create
+   * /api/user/internal/update
+   * /api/user/create
+   * related userService methods
+   * related portal assignment logic
+   * role assignment logic
+   * contact management logic
 
-   User
-   Portal
-   Portal Admin
-   Portal User
-   Role
-   UserRole
-   PortalAssignment
+2. Produce a design document containing:
 
-   (or equivalent entities discovered)
+   * impacted controllers
+   * impacted services
+   * impacted repositories
+   * impacted entities
+   * impacted security checks
+   * impacted integration points
 
-4. Determine cardinality:
+3. For /api/user/internal/upsert:
 
-   * Can one user belong to multiple portals?
-   * Can one user be Portal Admin for multiple portals?
-   * Can one user be Portal User for multiple portals?
-   * Can a portal have multiple admins?
-   * Can a portal have multiple users?
+   * Determine how existing internal users are identified.
+   * If user exists:
 
-5. Trace delete APIs:
+     * update allowed attributes
+     * add missing contacts
+     * update changed contacts if current codebase supports it
+     * add requested roles
+     * do not remove existing roles
+     * do not remove existing contacts
+   * If user does not exist:
 
-   External User Delete:
+     * reuse existing internal create flow.
+   * Reuse existing permission checks from relevant internal user management functionality.
 
-   * Tables read
-   * Tables updated
-   * Tables deleted
+4. For /api/user/upsert:
 
-   Internal User Delete:
+   * Analyze current person creation flow.
+   * Determine how existing person/halo identity matching is currently implemented.
+   * If existing person is found:
 
-   * Tables read
-   * Tables updated
-   * Tables deleted
+     * reuse existing person
+     * add portal assignment if missing
+     * add requested role if missing
+     * update supported attributes
+     * avoid duplicate person creation
+     * avoid duplicate halo identity creation
+     * do not re-trigger registration email unless existing code explicitly requires it.
+   * If person is not found:
 
-6. Determine actual business meaning of delete:
+     * reuse existing create user/person flow.
 
-   Is delete currently:
+5. Document:
 
-   * removing a user entirely?
-   * removing a portal assignment?
-   * removing a role assignment?
-   * removing portal access only?
+   * assumptions
+   * edge cases
+   * duplicate prevention strategy
+   * transaction boundaries
+   * regression risks
 
-7. Impact Analysis:
+6. Generate:
 
-   If User.status = INACTIVE:
+   * implementation plan
+   * unit test scenarios
+   * integration test scenarios
 
-   * Which portals lose access?
-   * Which roles are affected?
-   * Would access be removed from all portals?
-   * Would this violate existing data relationships?
-
-8. Story Validation:
-
-   Compare the story requirement against the current data model.
-
-   Explicitly answer:
-
-   "Does setting a user to INACTIVE correctly implement removing a user from a portal?"
-
-   If NO:
-   Explain what should actually be updated instead.
-
-Deliverable:
-
-Produce a markdown document named:
-
-DELETE_USER_DATA_MODEL_ANALYSIS.md
-
-Include:
-
-* ER-style relationship diagram (ASCII is fine)
-* Table relationship explanations
-* Cardinality analysis
-* Delete flow analysis
-* Recommendation before implementation
-
-Do not generate code.
-Do not modify files.
-Only analyze and document.
-
-
-After that, ask one more powerful question
-
-Additionally, search for real examples in the database access layer.
-
-Provide examples showing:
-
-User A -> Portal X
-User A -> Portal Y
-
-or evidence that such a relationship is impossible.
-
-Use repository queries, entity mappings, and foreign key relationships as evidence.
-
-Do not speculate.
-
-Only provide conclusions supported by code/schema.
+Do not generate code until the design and impact analysis are completed and reviewed.
