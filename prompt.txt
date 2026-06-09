@@ -1,284 +1,324 @@
-ask at least Questions 1, 3, 4, 5, 6, 8, and 9.
-1. API Contract
+# Story Implementation - User Upsert APIs
 
-Do the new APIs use the exact same request payloads as existing APIs?
+## Objective
 
+Implement two new APIs:
+
+```http
+POST /api/user/internal/upsert
+POST /api/user/upsert
+```
+
+The goal is to support create-or-update behavior while preventing duplicate users/persons and preserving existing roles and contacts.
+
+---
+
+## Important Constraints
+
+Before making any code changes:
+
+1. Analyze existing implementations of:
+
+   * `/api/user/internal/create`
+   * `/api/user/internal/update`
+   * `/api/user/create`
+   * related UserService methods
+   * role assignment logic
+   * contact handling logic
+   * portal assignment logic
+   * permission validation logic
+
+2. Reuse existing project architecture, patterns, services, repositories, DTOs, entities, validators, and security implementations.
+
+3. Do NOT introduce:
+
+   * new frameworks
+   * new persistence approaches
+   * new libraries
+   * new architectural patterns
+
+4. Do NOT assume behavior not explicitly stated below.
+
+5. Preserve backward compatibility of existing APIs.
+
+---
+
+# API Contracts
+
+## Internal Upsert
+
+```http
+POST /api/user/internal/upsert
+```
+
+Use the same request and response payload structure currently used by:
+
+```http
 /api/user/internal/create
+```
+
+No new DTOs should be introduced unless absolutely required by existing project patterns.
+
+---
+
+## External Upsert
+
+```http
+POST /api/user/upsert
+```
+
+Use the same request and response payload structure currently used by:
+
+```http
 /api/user/create
+```
 
-or are new request/response models expected?
+---
 
-This affects backward compatibility.
+# Internal User Upsert Rules
 
-2. Response Behavior
+## User Lookup
 
-If existing user is found:
+Match existing internal user using:
 
-Should response be:
+```text
+attuid = pam_user.user_name
+```
 
-{
-  "status":"UPDATED"
-}
+If no matching user exists:
 
-or
+* Execute existing create flow.
 
-{
-  "status":"SUCCESS"
-}
+If matching user exists:
 
-or identical to current create response?
+* Execute update behavior.
 
-Acceptance criteria does not define response behavior.
+---
 
-3. Role Handling
+## Roles
 
-Story says:
-
-do not delete existing user roles
-
-Need clarification:
+Existing roles must NOT be removed.
 
 Example:
 
-Existing roles:
+Current roles:
 
-ROLE_A
-ROLE_B
+```text
+AGENT
+```
 
-Request contains:
+Incoming role:
 
-ROLE_C
+```text
+ADMIN
+```
 
-Expected result?
+Result:
 
-ROLE_A
-ROLE_B
-ROLE_C
+```text
+AGENT
+ADMIN
+```
 
-I assume yes, but should confirm.
+Role assignment must behave as additive merge logic.
 
-4. Contact Handling
+Do not remove roles not present in the request.
 
-Story says:
+---
 
-add contacts if not in DB
+## Contacts
 
-Need clarification:
+If incoming contact does not exist:
 
-If contact already exists and phone number changes:
+* Add contact.
 
-Should it:
+If phone number differs:
 
-Update existing contact?
-Add new contact?
-Ignore?
+* Add the new contact.
+* Do not delete existing contacts.
 
-5. Internal User Matching Criteria
+Contact handling should follow the same additive behavior as role assignment.
 
-How exactly do we determine existing internal user?
+---
 
-By:
+## Permissions
 
+Reuse existing permission validation.
 
-email?
+Valid permissions include:
 
-
-Story only says:
-
-check if internal pam_user already exists
-
-Need precise lookup criteria.
-
-
-6. External User Matching Criteria
-
-Story mentions:
-
-haloIdentity exists
-identityProvider == halo
-externalAccessId matches email
-
-Need confirmation:
-
-Are all conditions required?
-
-Or first match wins?
-
-Example:
-
-email match
-identity provider mismatch
-
-Should that be considered existing user?
-
-7. Multiple Matches
-
-What if multiple people satisfy lookup criteria?
-
-Example:
-
-2 halo identities
-same email
-
-Should:
-
-fail?
-choose newest?
-choose active?
-
-Need business rule.
-
-8. Pending Halo Record
-
-Story mentions:
-
-PENDING_HALO_ATTACH
-
-Need clarification:
-
-If existing person is in pending state:
-
-should we update?
-activate?
-create new?
-error?
-
-9. Registration Email
-
-Story says:
-
-Do NOT re-trigger registration email
-
-Questions:
-
-For existing user:
-
-Never send email?
-Send only when portal assignment added?
-Send when role added?
-
-Need explicit rule.
-
-10. Portal Assignment
-
-When user exists but portal assignment doesn't:
-
-Should system:
-
-create portal assignment
-
-automatically?
-
-Story implies yes but not explicitly stated.
-
-11. Authorization
-
-Story mentions permissions:
-
-Internal:
-
+```text
 INTERNAL_USERS/ADMIN_MANAGEMENT/EDIT
 PORTAL_AGENT_ACTIONS/PORTALS/EDIT
 PORTAL_ADMIN_ACTIONS/PORTALS/EDIT
+```
 
-External:
+Do not invent new permission checks.
 
-OVERVIEW/USERS/EDIT
-PORTAL_AGENT_ACTIONS/PORTALS/EDIT
-PORTAL_ADMIN_ACTIONS/PORTALS/EDIT
+---
 
-Need confirmation:
+# External User Upsert Rules
 
-Should permission validation be copied exactly from existing APIs?
+## User Matching Logic
 
-Or new permission logic?
+Lookup must follow this sequence.
 
+### Step 1
 
-Spec Agent Prompt
+Find active halo identity where:
 
-Use this prompt with your Spec/Copilot Agent.
+```text
+identityProvider = HALO
+externalAccessId matches incoming email
+```
 
-Analyze the existing implementation before proposing any code changes.
+Matching must be case-insensitive for externalAccessId.
 
-Goal:
-Implement two new upsert APIs:
+If found:
 
-1. /api/user/internal/upsert
-2. /api/user/upsert
+* Use the associated existing pam_person.
 
-Constraints:
+### Step 2
 
-* Reuse existing project architecture, patterns, services, repositories, DTOs, entities, validation, security, and transaction handling.
-* Do not introduce new frameworks, libraries, persistence approaches, or architectural patterns.
-* Do not assume requirements that are not explicitly present in the story.
-* If any requirement is ambiguous, identify it as a clarification item instead of inventing behavior.
+If no result from Step 1:
 
-Tasks:
+Find person in:
 
-1. Identify current implementations of:
+```text
+PENDING_HALO_ATTACH
+```
 
-   * /api/user/internal/create
-   * /api/user/internal/update
-   * /api/user/create
-   * related userService methods
-   * related portal assignment logic
-   * role assignment logic
-   * contact management logic
+state whose contact email matches incoming email.
 
-2. Produce a design document containing:
+If found:
 
-   * impacted controllers
-   * impacted services
-   * impacted repositories
-   * impacted entities
-   * impacted security checks
-   * impacted integration points
+* Use the existing pam_person.
+* Create a new pam_user under that person.
+* Apply requested role(s), access, and user attributes.
 
-3. For /api/user/internal/upsert:
+### Step 3
 
-   * Determine how existing internal users are identified.
-   * If user exists:
+If no person found:
 
-     * update allowed attributes
-     * add missing contacts
-     * update changed contacts if current codebase supports it
-     * add requested roles
-     * do not remove existing roles
-     * do not remove existing contacts
-   * If user does not exist:
+Execute existing create user/person flow.
 
-     * reuse existing internal create flow.
-   * Reuse existing permission checks from relevant internal user management functionality.
+---
 
-4. For /api/user/upsert:
+## Multiple Match Handling
 
-   * Analyze current person creation flow.
-   * Determine how existing person/halo identity matching is currently implemented.
-   * If existing person is found:
+Multiple pam_person matches should not normally occur.
 
-     * reuse existing person
-     * add portal assignment if missing
-     * add requested role if missing
-     * update supported attributes
-     * avoid duplicate person creation
-     * avoid duplicate halo identity creation
-     * do not re-trigger registration email unless existing code explicitly requires it.
-   * If person is not found:
+If they do:
 
-     * reuse existing create user/person flow.
+* Select the most recent pam_person record (latest record).
+* Follow existing project conventions if a standard ordering already exists.
 
-5. Document:
+---
 
-   * assumptions
-   * edge cases
-   * duplicate prevention strategy
-   * transaction boundaries
-   * regression risks
+## Roles
 
-6. Generate:
+Role assignment must be additive.
 
-   * implementation plan
-   * unit test scenarios
-   * integration test scenarios
+Do not remove existing roles.
 
-Do not generate code until the design and impact analysis are completed and reviewed.
+---
+
+## Person Reuse
+
+When matching person exists:
+
+* Reuse existing pam_person.
+* Do not create duplicate pam_person records.
+* Do not create duplicate halo identity records.
+
+---
+
+## Portal Assignment
+
+Do NOT automatically create portal assignment solely because a user already exists.
+
+Follow current create flow behavior only.
+
+Do not introduce new portal-assignment behavior beyond what already exists.
+
+---
+
+## Registration Email
+
+No email handling changes are required.
+
+Current implementation does not send registration emails.
+
+Do not introduce any email functionality.
+
+---
+
+# Response Behavior
+
+Use the same response structure and HTTP status behavior as existing create APIs.
+
+For successful create or update:
+
+```http
+200 OK
+```
+
+No special UPDATED response object is required.
+
+---
+
+# Implementation Expectations
+
+Produce the following before coding:
+
+1. Existing flow analysis
+2. Impacted classes
+3. Service-level design
+4. Repository-level design
+5. Data flow for create path
+6. Data flow for update path
+7. Edge case analysis
+8. Unit test plan
+9. Integration test plan
+
+Only after analysis is complete should implementation begin.
+
+---
+
+# Testing Requirements
+
+Add or update tests covering:
+
+## Internal Upsert
+
+* New user creation
+* Existing user update
+* Existing role preservation
+* New role addition
+* Existing contact preservation
+* New contact addition
+* Permission validation
+
+## External Upsert
+
+* Existing active halo identity match
+* Pending halo attach match
+* New person creation
+* Existing person reuse
+* Role merge behavior
+* Duplicate prevention
+* Multiple match scenario
+* Case-insensitive externalAccessId matching
+
+---
+
+# Non-Goals
+
+Do NOT:
+
+* Refactor unrelated code.
+* Replace existing patterns.
+* Change existing API contracts.
+* Introduce new business rules.
+* Modify existing create APIs except where shared logic extraction is required.
+* Change existing database schema unless analysis proves it is required.
