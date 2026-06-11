@@ -1,324 +1,271 @@
-# Story Implementation - User Upsert APIs
+Objective
 
-## Objective
+Perform a comprehensive migration feasibility assessment for upgrading the iuw-rating-manager-ui application.
 
-Implement two new APIs:
+This is an analysis exercise only.
 
-```http
-POST /api/user/internal/upsert
-POST /api/user/upsert
-```
+Do NOT modify any code or dependencies unless explicitly instructed later.
 
-The goal is to support create-or-update behavior while preventing duplicate users/persons and preserving existing roles and contacts.
+The goal is to determine whether upgrading to Java 11 or Java 17 is the better option from the perspectives of development effort, regression risk, testing effort, and long-term maintainability.
 
----
+Application Context
 
-## Important Constraints
+The application is named:
 
-Before making any code changes:
+iuw-rating-manager-ui
 
-1. Analyze existing implementations of:
+Characteristics:
 
-   * `/api/user/internal/create`
-   * `/api/user/internal/update`
-   * `/api/user/create`
-   * related UserService methods
-   * role assignment logic
-   * contact handling logic
-   * portal assignment logic
-   * permission validation logic
+Java/Spring Boot application.
+React components are bundled into the application JAR and served as static resources.
+The React build process is integrated into the Java build pipeline.
+The application is currently functioning in production.
+Minimizing disruption to existing functionality is the highest priority.
+Analysis Scope
 
-2. Reuse existing project architecture, patterns, services, repositories, DTOs, entities, validators, and security implementations.
+Analyze the current project and produce a detailed report covering both upgrade paths:
 
-3. Do NOT introduce:
+Current Version → Java 11
+Current Version → Java 17
 
-   * new frameworks
-   * new persistence approaches
-   * new libraries
-   * new architectural patterns
+Do not assume the current Java version. Detect it from the project.
 
-4. Do NOT assume behavior not explicitly stated below.
+Review all relevant files including, but not limited to:
 
-5. Preserve backward compatibility of existing APIs.
+pom.xml files
+parent POMs
+build.gradle files
+Maven wrapper configuration
+Spring Boot versions
+Spring Framework versions
+plugin configurations
+frontend build scripts
+package.json
+webpack/react build configurations
+Dockerfiles
+CI/CD pipeline definitions
+deployment manifests
+startup scripts
+Kubernetes/PCF configurations
+static resource packaging mechanisms
+unit/integration test configurations.
+Deliverables
 
----
+Produce a report with the following sections.
 
-# API Contracts
+1. Current State Assessment
 
-## Internal Upsert
+Identify:
 
-```http
-POST /api/user/internal/upsert
-```
+Current Java version.
+Current Spring Boot version.
+Current Spring Framework version.
+Maven/Gradle versions.
+React version.
+Node/npm versions.
+Build plugins.
+Test frameworks.
+Deployment targets.
 
-Use the same request and response payload structure currently used by:
+Provide evidence from the source files.
 
-```http
-/api/user/internal/create
-```
+2. Java 11 Upgrade Analysis
 
-No new DTOs should be introduced unless absolutely required by existing project patterns.
+Identify:
 
----
+Compatibility
+Whether the application can run on Java 11.
+Required dependency upgrades.
+Required Spring Boot upgrades.
+Required Maven/Gradle upgrades.
+Required plugin upgrades.
+Breaking Changes
 
-## External Upsert
+Identify potential issues related to:
 
-```http
-POST /api/user/upsert
-```
+Removal of Java EE modules.
+JAXB/JAX-WS usage.
+Reflection access.
+Deprecated APIs.
+Security providers.
+Build plugins.
+Embedded server compatibility.
+Frontend build integration.
+Effort Estimation
 
-Use the same request and response payload structure currently used by:
+Categorize effort:
 
-```http
-/api/user/create
-```
+Low
+Medium
+High
 
----
+Estimate:
 
-# Internal User Upsert Rules
+Development effort.
+Regression testing effort.
+Deployment effort.
 
-## User Lookup
+List expected code changes.
 
-Match existing internal user using:
+3. Java 17 Upgrade Analysis
 
-```text
-attuid = pam_user.user_name
-```
+Perform the same assessment.
 
-If no matching user exists:
+Identify:
 
-* Execute existing create flow.
+Compatibility
+Required framework upgrades.
+Spring Boot compatibility requirements.
+Plugin compatibility.
+Breaking Changes
 
-If matching user exists:
+Identify issues related to:
 
-* Execute update behavior.
+Strong encapsulation.
+Illegal reflective access.
+Module restrictions.
+Jakarta namespace migrations.
+Removed JVM options.
+Third-party library incompatibilities.
+React static packaging impacts.
+CI/CD impacts.
+Effort Estimation
 
----
+Estimate:
 
-## Roles
+Development effort.
+Testing effort.
+Deployment effort.
 
-Existing roles must NOT be removed.
+List expected code changes.
 
-Example:
+4. Dependency Impact Matrix
 
-Current roles:
+Create a table similar to:
 
-```text
-AGENT
-```
+Component	Current	Java 11 Required	Java 17 Required	Breaking Risk	Notes
 
-Incoming role:
+Include:
 
-```text
-ADMIN
-```
+Spring Boot
+Spring Framework
+Maven/Gradle
+Tomcat/Jetty
+Security libraries
+Jackson
+Logging libraries
+Database drivers
+Testing libraries
+Frontend build tools
+Node/npm
+React dependencies
+Build plugins.
+5. Static React Packaging Analysis
 
-Result:
+Analyze how React artifacts are packaged into the JAR.
 
-```text
-AGENT
-ADMIN
-```
+Identify:
 
-Role assignment must behave as additive merge logic.
+Current packaging mechanism.
+Whether Java 11 impacts it.
+Whether Java 17 impacts it.
+Required changes, if any.
+Potential runtime risks.
+6. Testing Impact Assessment
 
-Do not remove roles not present in the request.
+Identify all areas requiring validation.
 
----
+Include:
 
-## Contacts
+Backend
+Unit tests.
+Integration tests.
+API tests.
+Security tests.
+Frontend
+React build verification.
+Static resource loading.
+Routing validation.
+Browser compatibility.
+End-to-End
+Login flows.
+Critical business workflows.
+Deployment smoke tests.
 
-If incoming contact does not exist:
+Estimate regression scope for both upgrade paths.
 
-* Add contact.
+7. CI/CD Impact
 
-If phone number differs:
+Analyze effects on:
 
-* Add the new contact.
-* Do not delete existing contacts.
+Build agents.
+Maven versions.
+Node versions.
+Docker base images.
+PCF/Kubernetes runtime images.
+Deployment pipelines.
+Artifact repositories.
 
-Contact handling should follow the same additive behavior as role assignment.
+List required changes.
 
----
+8. Risk Assessment
 
-## Permissions
+For each upgrade path provide:
 
-Reuse existing permission validation.
+Technical risk.
+Functional risk.
+Deployment risk.
+Testing risk.
+Long-term support implications.
 
-Valid permissions include:
+Use a rating:
 
-```text
-INTERNAL_USERS/ADMIN_MANAGEMENT/EDIT
-PORTAL_AGENT_ACTIONS/PORTALS/EDIT
-PORTAL_ADMIN_ACTIONS/PORTALS/EDIT
-```
+Low
+Medium
+High
+Critical
+9. Recommendation
 
-Do not invent new permission checks.
+Provide a final recommendation.
 
----
+The recommendation must balance:
 
-# External User Upsert Rules
+Lowest development effort.
+Lowest regression risk.
+Lowest testing effort.
+Long-term supportability.
+Alignment with current ecosystem support.
 
-## User Matching Logic
+Explicitly answer:
 
-Lookup must follow this sequence.
+Should this application upgrade to Java 11 or Java 17?
+Why?
+What assumptions were made?
+What are the prerequisites before starting?
+What phased migration approach should be followed?
+10. Migration Roadmap
 
-### Step 1
+Provide an implementation roadmap for the recommended option including:
 
-Find active halo identity where:
+Phase 1 – Preparation
 
-```text
-identityProvider = HALO
-externalAccessId matches incoming email
-```
+Phase 2 – Dependency upgrades
 
-Matching must be case-insensitive for externalAccessId.
+Phase 3 – Code remediation
 
-If found:
+Phase 4 – Testing
 
-* Use the associated existing pam_person.
+Phase 5 – Deployment validation
 
-### Step 2
+Phase 6 – Production rollout
 
-If no result from Step 1:
+Include estimated complexity for each phase.
 
-Find person in:
-
-```text
-PENDING_HALO_ATTACH
-```
-
-state whose contact email matches incoming email.
-
-If found:
-
-* Use the existing pam_person.
-* Create a new pam_user under that person.
-* Apply requested role(s), access, and user attributes.
-
-### Step 3
-
-If no person found:
-
-Execute existing create user/person flow.
-
----
-
-## Multiple Match Handling
-
-Multiple pam_person matches should not normally occur.
-
-If they do:
-
-* Select the most recent pam_person record (latest record).
-* Follow existing project conventions if a standard ordering already exists.
-
----
-
-## Roles
-
-Role assignment must be additive.
-
-Do not remove existing roles.
-
----
-
-## Person Reuse
-
-When matching person exists:
-
-* Reuse existing pam_person.
-* Do not create duplicate pam_person records.
-* Do not create duplicate halo identity records.
-
----
-
-## Portal Assignment
-
-Do NOT automatically create portal assignment solely because a user already exists.
-
-Follow current create flow behavior only.
-
-Do not introduce new portal-assignment behavior beyond what already exists.
-
----
-
-## Registration Email
-
-No email handling changes are required.
-
-Current implementation does not send registration emails.
-
-Do not introduce any email functionality.
-
----
-
-# Response Behavior
-
-Use the same response structure and HTTP status behavior as existing create APIs.
-
-For successful create or update:
-
-```http
-200 OK
-```
-
-No special UPDATED response object is required.
-
----
-
-# Implementation Expectations
-
-Produce the following before coding:
-
-1. Existing flow analysis
-2. Impacted classes
-3. Service-level design
-4. Repository-level design
-5. Data flow for create path
-6. Data flow for update path
-7. Edge case analysis
-8. Unit test plan
-9. Integration test plan
-
-Only after analysis is complete should implementation begin.
-
----
-
-# Testing Requirements
-
-Add or update tests covering:
-
-## Internal Upsert
-
-* New user creation
-* Existing user update
-* Existing role preservation
-* New role addition
-* Existing contact preservation
-* New contact addition
-* Permission validation
-
-## External Upsert
-
-* Existing active halo identity match
-* Pending halo attach match
-* New person creation
-* Existing person reuse
-* Role merge behavior
-* Duplicate prevention
-* Multiple match scenario
-* Case-insensitive externalAccessId matching
-
----
-
-# Non-Goals
-
-Do NOT:
-
-* Refactor unrelated code.
-* Replace existing patterns.
-* Change existing API contracts.
-* Introduce new business rules.
-* Modify existing create APIs except where shared logic extraction is required.
-* Change existing database schema unless analysis proves it is required.
+Important Constraints
+Do not modify source code.
+Do not upgrade dependencies.
+Do not generate pull requests.
+Do not make assumptions without evidence.
+Clearly distinguish verified findings from assumptions.
+Cite the exact files and configurations used to reach conclusions.
+If information is missing, explicitly identify the gaps and the additional information required.
