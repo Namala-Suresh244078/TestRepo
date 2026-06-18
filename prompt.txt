@@ -1,271 +1,94 @@
-Objective
+Title: Backend Validation on the Submission Endpoint
 
-Perform a comprehensive migration feasibility assessment for upgrading the iuw-rating-manager-ui application.
+Description
 
-This is an analysis exercise only.
+As a Form Author, I want the submission endpoint to enforce the survey's readOnlyIf condition so that users cannot bypass the frontend read-only behavior and submit responses when the form should be read-only.
 
-Do NOT modify any code or dependencies unless explicitly instructed later.
+Background
 
-The goal is to determine whether upgrading to Java 11 or Java 17 is the better option from the perspectives of development effort, regression risk, testing effort, and long-term maintainability.
+Story GDCPFRMS-1198 introduced a survey-level property named readOnlyIf that allows authors to dynamically place a survey into a read-only state based on a SurveyJS expression.
 
-Application Context
+The frontend currently evaluates this condition and disables all inputs and removes the submit button when the expression evaluates to true. However, frontend enforcement alone can be bypassed through browser developer tools, direct API calls, or other client-side manipulation.
 
-The application is named:
+To ensure data integrity, the submission API must independently evaluate the readOnlyIf expression and reject submissions when the form is in a read-only state for the current user.
 
-iuw-rating-manager-ui
+Acceptance Criteria
 
-Characteristics:
+1. Read readOnlyIf Expression
 
-Java/Spring Boot application.
-React components are bundled into the application JAR and served as static resources.
-The React build process is integrated into the Java build pipeline.
-The application is currently functioning in production.
-Minimizing disruption to existing functionality is the highest priority.
-Analysis Scope
+   * When a form submission request is received, the backend retrieves the form definition.
+   * The backend reads the survey-level readOnlyIf property from the survey JSON.
+   * If the property is not present or is blank, submission processing continues normally.
 
-Analyze the current project and produce a detailed report covering both upgrade paths:
+2. Support Profile Variables
 
-Current Version → Java 11
-Current Version → Java 17
+   * The backend supports the same global user profile variables supported by the frontend implementation.
+   * Examples include:
 
-Do not assume the current Java version. Detect it from the project.
+     * profileSiteCode
+     * profileCurrentRole
+     * other existing supported profile variables
+   * Variable values must be resolved using the authenticated user's context.
 
-Review all relevant files including, but not limited to:
+3. Evaluate Expression
 
-pom.xml files
-parent POMs
-build.gradle files
-Maven wrapper configuration
-Spring Boot versions
-Spring Framework versions
-plugin configurations
-frontend build scripts
-package.json
-webpack/react build configurations
-Dockerfiles
-CI/CD pipeline definitions
-deployment manifests
-startup scripts
-Kubernetes/PCF configurations
-static resource packaging mechanisms
-unit/integration test configurations.
-Deliverables
+   * The backend evaluates the readOnlyIf expression using the resolved profile variable values.
+   * Expression evaluation will be implemented using a custom Java evaluator.
+   * The evaluation result must match the frontend behavior for supported profile-variable-based expressions.
 
-Produce a report with the following sections.
+4. Reject Read-Only Submissions
 
-1. Current State Assessment
+   * If the readOnlyIf expression evaluates to true:
 
-Identify:
+     * The submission must not be persisted.
+     * The API returns HTTP 403 Forbidden.
+     * A meaningful error message is returned indicating that the form is currently read-only and cannot accept submissions.
 
-Current Java version.
-Current Spring Boot version.
-Current Spring Framework version.
-Maven/Gradle versions.
-React version.
-Node/npm versions.
-Build plugins.
-Test frameworks.
-Deployment targets.
+5. Allow Valid Submissions
 
-Provide evidence from the source files.
+   * If the readOnlyIf expression evaluates to false:
 
-2. Java 11 Upgrade Analysis
+     * Submission processing continues normally.
+     * Existing validation and persistence behavior remain unchanged.
 
-Identify:
+6. Auditing and Logging
 
-Compatibility
-Whether the application can run on Java 11.
-Required dependency upgrades.
-Required Spring Boot upgrades.
-Required Maven/Gradle upgrades.
-Required plugin upgrades.
-Breaking Changes
+   * Log a warning when a submission is rejected due to the readOnlyIf condition evaluating to true.
+   * Include form identifier and user identifier in the log message where appropriate.
 
-Identify potential issues related to:
+Out of Scope
 
-Removal of Java EE modules.
-JAXB/JAX-WS usage.
-Reflection access.
-Deprecated APIs.
-Security providers.
-Build plugins.
-Embedded server compatibility.
-Frontend build integration.
-Effort Estimation
+* Survey question reference evaluation (e.g. {Q1} = 'Yes').
+* Draft save functionality.
+* Auto-save functionality.
+* Changes to frontend behavior introduced in GDCPFRMS-1198.
+* Changes to existing submission validation rules unrelated to readOnlyIf.
 
-Categorize effort:
+Technical Notes
 
-Low
-Medium
-High
+Implementation Flow:
 
-Estimate:
+Submission Request
+|
+v
+Load Form Definition
+|
+v
+Read readOnlyIf
+|
+v
+Resolve User Profile Variables
+|
+v
+Evaluate Expression
+|
++--> TRUE  -> Return 403 Forbidden
+|
++--> FALSE -> Continue Submission
 
-Development effort.
-Regression testing effort.
-Deployment effort.
+Suggested Error Response
 
-List expected code changes.
-
-3. Java 17 Upgrade Analysis
-
-Perform the same assessment.
-
-Identify:
-
-Compatibility
-Required framework upgrades.
-Spring Boot compatibility requirements.
-Plugin compatibility.
-Breaking Changes
-
-Identify issues related to:
-
-Strong encapsulation.
-Illegal reflective access.
-Module restrictions.
-Jakarta namespace migrations.
-Removed JVM options.
-Third-party library incompatibilities.
-React static packaging impacts.
-CI/CD impacts.
-Effort Estimation
-
-Estimate:
-
-Development effort.
-Testing effort.
-Deployment effort.
-
-List expected code changes.
-
-4. Dependency Impact Matrix
-
-Create a table similar to:
-
-Component	Current	Java 11 Required	Java 17 Required	Breaking Risk	Notes
-
-Include:
-
-Spring Boot
-Spring Framework
-Maven/Gradle
-Tomcat/Jetty
-Security libraries
-Jackson
-Logging libraries
-Database drivers
-Testing libraries
-Frontend build tools
-Node/npm
-React dependencies
-Build plugins.
-5. Static React Packaging Analysis
-
-Analyze how React artifacts are packaged into the JAR.
-
-Identify:
-
-Current packaging mechanism.
-Whether Java 11 impacts it.
-Whether Java 17 impacts it.
-Required changes, if any.
-Potential runtime risks.
-6. Testing Impact Assessment
-
-Identify all areas requiring validation.
-
-Include:
-
-Backend
-Unit tests.
-Integration tests.
-API tests.
-Security tests.
-Frontend
-React build verification.
-Static resource loading.
-Routing validation.
-Browser compatibility.
-End-to-End
-Login flows.
-Critical business workflows.
-Deployment smoke tests.
-
-Estimate regression scope for both upgrade paths.
-
-7. CI/CD Impact
-
-Analyze effects on:
-
-Build agents.
-Maven versions.
-Node versions.
-Docker base images.
-PCF/Kubernetes runtime images.
-Deployment pipelines.
-Artifact repositories.
-
-List required changes.
-
-8. Risk Assessment
-
-For each upgrade path provide:
-
-Technical risk.
-Functional risk.
-Deployment risk.
-Testing risk.
-Long-term support implications.
-
-Use a rating:
-
-Low
-Medium
-High
-Critical
-9. Recommendation
-
-Provide a final recommendation.
-
-The recommendation must balance:
-
-Lowest development effort.
-Lowest regression risk.
-Lowest testing effort.
-Long-term supportability.
-Alignment with current ecosystem support.
-
-Explicitly answer:
-
-Should this application upgrade to Java 11 or Java 17?
-Why?
-What assumptions were made?
-What are the prerequisites before starting?
-What phased migration approach should be followed?
-10. Migration Roadmap
-
-Provide an implementation roadmap for the recommended option including:
-
-Phase 1 – Preparation
-
-Phase 2 – Dependency upgrades
-
-Phase 3 – Code remediation
-
-Phase 4 – Testing
-
-Phase 5 – Deployment validation
-
-Phase 6 – Production rollout
-
-Include estimated complexity for each phase.
-
-Important Constraints
-Do not modify source code.
-Do not upgrade dependencies.
-Do not generate pull requests.
-Do not make assumptions without evidence.
-Clearly distinguish verified findings from assumptions.
-Cite the exact files and configurations used to reach conclusions.
-If information is missing, explicitly identify the gaps and the additional information required.
+{
+"status": 403,
+"message": "This form is currently read-only and cannot accept submissions."
+}
