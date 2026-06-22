@@ -1,94 +1,19 @@
-Title: Backend Validation on the Submission Endpoint
-
 Description
 
-As a Form Author, I want the submission endpoint to enforce the survey's readOnlyIf condition so that users cannot bypass the frontend read-only behavior and submit responses when the form should be read-only.
-
-Background
-
-Story GDCPFRMS-1198 introduced a survey-level property named readOnlyIf that allows authors to dynamically place a survey into a read-only state based on a SurveyJS expression.
-
-The frontend currently evaluates this condition and disables all inputs and removes the submit button when the expression evaluates to true. However, frontend enforcement alone can be bypassed through browser developer tools, direct API calls, or other client-side manipulation.
-
-To ensure data integrity, the submission API must independently evaluate the readOnlyIf expression and reject submissions when the form is in a read-only state for the current user.
+As a Form Author, I want the submission endpoint to enforce business validations currently handled by the frontend so that invalid or unauthorized submissions cannot be made by bypassing UI controls.
 
 Acceptance Criteria
 
-1. Read readOnlyIf Expression
+The backend validates whether the form is editable before processing a submission and rejects submissions for forms that are in a read-only state.
+The backend enforces the form's multiple submission setting and rejects submissions when multiple submissions are not allowed and the user has already submitted.
+The backend validates the current user's submission permissions and rejects submissions from users without sufficient access.
+The backend validates submission ownership during updates and rejects attempts to modify submissions not owned by the current user.
+The backend validates email attachment size limits and rejects submissions that exceed the configured limits.
+The backend validates uploaded files, including allowed file types and extensions, and rejects unsupported files.
+Rejected submissions return an appropriate error response and are not persisted.
 
-   * When a form submission request is received, the backend retrieves the form definition.
-   * The backend reads the survey-level readOnlyIf property from the survey JSON.
-   * If the property is not present or is blank, submission processing continues normally.
+Notes
 
-2. Support Profile Variables
-
-   * The backend supports the same global user profile variables supported by the frontend implementation.
-   * Examples include:
-
-     * profileSiteCode
-     * profileCurrentRole
-     * other existing supported profile variables
-   * Variable values must be resolved using the authenticated user's context.
-
-3. Evaluate Expression
-
-   * The backend evaluates the readOnlyIf expression using the resolved profile variable values.
-   * Expression evaluation will be implemented using a custom Java evaluator.
-   * The evaluation result must match the frontend behavior for supported profile-variable-based expressions.
-
-4. Reject Read-Only Submissions
-
-   * If the readOnlyIf expression evaluates to true:
-
-     * The submission must not be persisted.
-     * The API returns HTTP 403 Forbidden.
-     * A meaningful error message is returned indicating that the form is currently read-only and cannot accept submissions.
-
-5. Allow Valid Submissions
-
-   * If the readOnlyIf expression evaluates to false:
-
-     * Submission processing continues normally.
-     * Existing validation and persistence behavior remain unchanged.
-
-6. Auditing and Logging
-
-   * Log a warning when a submission is rejected due to the readOnlyIf condition evaluating to true.
-   * Include form identifier and user identifier in the log message where appropriate.
-
-Out of Scope
-
-* Survey question reference evaluation (e.g. {Q1} = 'Yes').
-* Draft save functionality.
-* Auto-save functionality.
-* Changes to frontend behavior introduced in GDCPFRMS-1198.
-* Changes to existing submission validation rules unrelated to readOnlyIf.
-
-Technical Notes
-
-Implementation Flow:
-
-Submission Request
-|
-v
-Load Form Definition
-|
-v
-Read readOnlyIf
-|
-v
-Resolve User Profile Variables
-|
-v
-Evaluate Expression
-|
-+--> TRUE  -> Return 403 Forbidden
-|
-+--> FALSE -> Continue Submission
-
-Suggested Error Response
-
-{
-"status": 403,
-"message": "This form is currently read-only and cannot accept submissions."
-}
+Backend validations should complement existing frontend validations and not replace them.
+Validation failures should prevent persistence of the submission.
+Existing behavior for valid submissions should remain unchanged.
