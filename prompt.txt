@@ -1,19 +1,11 @@
-Description
+Comments from team on FIS: 
 
-As a Form Author, I want the submission endpoint to enforce business validations currently handled by the frontend so that invalid or unauthorized submissions cannot be made by bypassing UI controls.
+The main implementation asks are:
 
-Acceptance Criteria
-
-The backend validates whether the form is editable before processing a submission and rejects submissions for forms that are in a read-only state.
-The backend enforces the form's multiple submission setting and rejects submissions when multiple submissions are not allowed and the user has already submitted.
-The backend validates the current user's submission permissions and rejects submissions from users without sufficient access.
-The backend validates submission ownership during updates and rejects attempts to modify submissions not owned by the current user.
-The backend validates email attachment size limits and rejects submissions that exceed the configured limits.
-The backend validates uploaded files, including allowed file types and extensions, and rejects unsupported files.
-Rejected submissions return an appropriate error response and are not persisted.
-
-Notes
-
-Backend validations should complement existing frontend validations and not replace them.
-Validation failures should prevent persistence of the submission.
-Existing behavior for valid submissions should remain unchanged.
+* Make node/AZ targeting dynamic. Right now the FIS config appears to explicitly target something like nodepool2. They want you to confirm whether that is correct, because the application pods may run on different eligible worker nodes/node pools depending on the environment. The preferred direction is to target the appropriate worker pool through labels/tags rather than assuming a specific node pool.
+* Understand NodePool/Class 1 vs 2 properly. Verify how both node classes are labeled, whether both can host PMP application pods, and whether the common PMP/CPMT label allows pods to move between them. This is important because if both are eligible, targeting only NodePool 2 may not fully test the application.
+* Keep FIS focused on worker nodes, not EKS control-plane/core infrastructure. For node interruption and drain scenarios, confirm that the experiment targets application worker nodes. Also document what your team means by “core node,” because AWS-managed EKS control-plane nodes are different from customer-managed system/core worker pools.
+* Define clear duration for every scenario. They specifically asked, “How long is the attack running?” Your test cases should explicitly state something like: AZ/node interruption for 30 minutes, memory pressure at 90% for X minutes, worker drain with an observation window of X minutes, and RDS failover with recovery time measurement. Also distinguish fault duration from application recovery time.
+* Measure recovery behavior. For node interruption/drain, capture how long it takes for pods to move to another healthy node/AZ, become Running/Ready, restore load-balancer health, and bring application traffic back to normal.
+* Explore combined FIS scenarios. They want you to research whether one experiment can run multiple faults together, for example: keep one AZ/node unavailable and simultaneously apply memory or CPU pressure to the surviving workers. FIS supports multiple actions, but you need to determine how that should be configured in your EAC/template/overlay structure.
+* Review the template/overlay design. They asked why there is one common template but multiple overlays such as RDS MySQL/Data overlays. You need to clarify which values are environment-specific versus scenario-specific, and whether multiple actions/scenarios can be composed using the current overlay approach.
