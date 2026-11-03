@@ -1,237 +1,181 @@
-# Role
-Act as a Senior Java Security Architect, Application Security Engineer, and Spring Boot Technical Lead.
+Stage A – Repository discovery
+Open your existing FIS project in VS Code and use Copilot Chat in Agent or Ask mode, depending on the task.
 
-# Objective
-Perform a comprehensive analysis of all Veracode security vulnerabilities identified in the current Java application.
+Act as a Senior AWS Solutions Architect and Chaos Engineering Specialist.
 
-The objective is to produce a detailed Security Vulnerability Assessment and Remediation Plan.
+I am working on an existing AWS Fault Injection Simulator (FIS) implementation.
 
-**IMPORTANT: This is an analysis-only exercise. Do not modify any source code, configuration files, dependency versions, build files, or application resources.**
+My team has requested the following enhancements:
 
-# 1. Analyse the Current Application
+1. Complete Availability Zone failure simulation (C08), affecting relevant EKS core and worker workloads.
+2. Application availability must be validated throughout AZ failure and database failover.
+3. Database failover testing.
+4. AWS Step Functions orchestration for pre-checks, optional database snapshot, FIS execution, recovery verification and reporting.
+5. Automated evidence collection instead of manual screenshots.
+6. Additional CPU, memory and node drain experiments.
 
-First, understand the existing application architecture and technology stack.
+TASK:
 
-Inspect:
-- Java version.
-- Spring Boot and Spring Framework versions.
-- Maven/Gradle dependencies.
-- Application architecture and module structure.
-- Security configurations.
-- Authentication and authorization mechanisms.
-- REST APIs and request handling.
-- Database interactions.
-- Input validation and output encoding.
-- Logging and exception handling.
-- Third-party libraries and transitive dependencies.
+Perform a comprehensive read-only analysis of this repository.
 
-Identify the existing versions before recommending any upgrades.
+Identify:
 
-# 2. Analyse All Veracode Findings
+- Existing FIS experiment templates and YAML/JSON configurations.
+- Existing C08 implementation and its current fault injection mechanism.
+- AWS services and resources referenced.
+- EKS cluster configuration and deployment manifests.
+- Core and worker workload definitions.
+- Availability Zone selection and targeting logic.
+- IAM roles and policies.
+- CloudWatch alarms and monitoring configurations.
+- Existing scripts and automation.
+- Terraform, CloudFormation or CDK configurations, if present.
+- Existing application health checks and API tests.
+- Existing reporting and evidence collection mechanisms.
 
-Review all available Veracode vulnerability reports, including CSV, XML, PDF, JSON, screenshots, or other available findings.
+For each finding, provide:
+1. File path and relevant code/configuration reference.
+2. Current implementation behaviour.
+3. Identified gaps against the new requirements.
+4. Recommended implementation changes.
+5. Dependencies and potential risks.
 
-Analyse every finding individually.
-
-For each vulnerability, capture:
-
-- Veracode flaw ID.
-- Vulnerability category / CWE.
-- Severity level.
-- Affected file.
-- Affected class and method.
-- Line number, if available.
-- Vulnerable code or dependency.
-- Root cause.
-- Why Veracode identifies this as a vulnerability.
-- Potential security exploitation scenario.
-- Business and application impact.
-- Recommended remediation.
-- Alternative remediation approaches, if applicable.
-
-Do not ignore duplicate findings. Identify duplicates or related findings, but retain traceability to every original Veracode finding.
-
-# 3. Categorise Remediation Complexity
-
-Classify every finding into the following categories:
-
-**Category A – Configuration / Dependency Changes**
-- Configuration corrections.
-- Security settings.
-- Dependency version updates.
-- Transitive dependency upgrades.
-- No significant business logic changes expected.
-
-**Category B – Minor Code Changes**
-- Input validation.
-- Output encoding.
-- Null checks.
-- Exception handling.
-- Secure logging.
-- Resource handling.
-- Small code-level security improvements.
-
-**Category C – Moderate Code Changes**
-- Changes involving multiple classes or methods.
-- API validation changes.
-- Authentication/authorization adjustments.
-- Database query modifications.
-- Changes to shared components.
-- Changes that may affect existing API behaviour.
-
-**Category D – Major Changes / Architectural Impact**
-- Major Spring Boot or Spring Framework upgrades.
-- Java version upgrades.
-- Significant dependency migrations.
-- Authentication architecture changes.
-- API contract changes.
-- Changes to core application workflows.
-- Changes requiring extensive regression testing.
-
-Do not automatically classify every dependency upgrade as major. Evaluate the actual compatibility and migration effort.
-
-# 4. Dependency and Framework Upgrade Assessment
-
-Pay special attention to findings recommending Spring Framework 6.2.7 or related dependency upgrades.
-
-For every proposed upgrade, analyse:
-
-- Current version.
-- Recommended target version.
-- Why the upgrade is required.
-- Which vulnerabilities it resolves.
-- Whether the upgrade is mandatory or an alternative code-level fix exists.
-- Compatibility with the existing Spring Boot version.
-- Java compatibility.
-- Third-party dependency compatibility.
-- Deprecated APIs or breaking changes.
-- Configuration changes required.
-- Potential runtime behaviour changes.
-- Testing effort.
-- Rollback considerations.
+Also identify information that cannot be established from the repository and needs AWS environment verification.
 
 IMPORTANT:
-Do not recommend upgrading individual Spring Framework modules independently if doing so would create version misalignment with the Spring Boot dependency management.
+- Do not modify any files.
+- Do not execute AWS commands that change infrastructure.
+- Do not start any FIS experiments.
+- Do not make assumptions where evidence is unavailable.
 
-Check whether the proposed Spring Framework version is compatible with the application's Spring Boot release. Prefer a supported Spring Boot dependency-management/BOM upgrade where appropriate.
+Produce a structured technical assessment and a phased implementation plan.
 
-Distinguish between:
-1. Security fixes achievable without framework upgrades.
-2. Security fixes requiring dependency upgrades.
-3. Security fixes requiring a Spring Boot/framework upgrade.
-4. Findings that require architectural or functional changes.
 
-# 5. Functional Impact Assessment
+What I expect from Copilot: A report explaining what already exists, what is missing and which files need changes.
 
-For every proposed remediation, evaluate the potential impact on existing functionality.
+Don't proceed to implementation until we review that report.
 
-Consider:
+Stage B – C08 technical design
+Once Copilot understands the repository, give it this prompt.
 
-- Existing REST API request and response contracts.
-- Backward compatibility.
-- Authentication and authorization flows.
-- Database operations.
-- Transaction management.
-- Exception handling.
-- Serialization and deserialization.
-- Spring dependency injection.
-- Reactive and asynchronous processing, if applicable.
-- Scheduled jobs and batch processing.
-- External system integrations.
-- Performance and memory consumption.
 
-Assign an impact level:
+Act as an AWS Chaos Engineering Architect.
 
-- LOW: No expected functional impact.
-- MEDIUM: Limited behaviour changes; targeted regression testing required.
-- HIGH: Significant changes to application behaviour or integration contracts.
-- CRITICAL: Potential application-wide impact or substantial architectural changes.
+Based on the existing repository analysis, design the enhanced C08 Complete Availability Zone Failure experiment.
 
-Clearly distinguish confirmed impacts from potential risks that require further investigation.
+Requirements:
 
-# 6. Prioritisation
+1. Dynamically discover eligible Availability Zones used by the EKS worker nodes.
+2. Select one eligible AZ using a configurable selection strategy.
+3. Identify all relevant core and worker workloads in the selected AZ.
+4. Evaluate AWS FIS AZ Availability: Power Interruption as the preferred built-in scenario where supported.
+5. Identify any custom FIS actions required to cover gaps.
+6. Validate that workloads in other AZs have adequate capacity.
+7. Validate EKS node recovery and pod rescheduling.
+8. Validate application availability continuously during the experiment.
+9. Capture recovery time and infrastructure events.
+10. Implement CloudWatch stop conditions and pre-execution safety checks.
 
-Provide remediation priority based on:
+Produce:
 
-- Veracode severity.
-- Exploitability.
-- Exposure of the vulnerable component.
-- Business criticality.
-- Remediation complexity.
-- Functional regression risk.
+- Proposed architecture.
+- Experiment execution sequence.
+- FIS template design.
+- Target selection strategy.
+- Required IAM permissions.
+- Required AWS resource tags.
+- Kubernetes prerequisites.
+- Application validation strategy.
+- Recovery validation strategy.
+- Failure handling and rollback approach.
 
-Use these priorities:
+Identify unsupported workloads and stateful workload risks.
 
-P0 – Critical security exposure requiring immediate attention.
-P1 – High-priority vulnerabilities.
-P2 – Medium-priority vulnerabilities.
-P3 – Low-priority vulnerabilities.
+Do not modify files or execute experiments.
 
-Do not use remediation complexity as a reason to downgrade security severity.
+Provide implementation recommendations specific to the existing repository.
 
-# 7. Required Deliverables
+Stage C – Step Functions implementation
+Only after C08 design is reviewed:
 
-Generate a comprehensive Markdown report named:
+Act as a Senior AWS Serverless Architect.
 
-VERACODE_SECURITY_ASSESSMENT.md
+Design an AWS Step Functions Standard Workflow to orchestrate the existing AWS FIS experiments.
 
-Include the following sections:
+The workflow must support configurable experiment types:
 
-1. Executive Summary.
-2. Existing Application Technology Stack.
-3. Overall Veracode Vulnerability Summary.
-4. Vulnerability Distribution by Category.
-5. Detailed Finding-by-Finding Analysis.
-6. Root Cause Analysis.
-7. Recommended Remediation for Each Finding.
-8. Dependency and Framework Upgrade Impact Assessment.
-9. Functional and Regression Risk Assessment.
-10. Recommended Remediation Prioritisation.
-11. Proposed Implementation Roadmap.
-12. Testing Strategy.
-13. Risks, Assumptions and Open Questions.
-14. Final Recommendations.
+- AZ_FAILURE
+- DATABASE_FAILOVER
+- CPU_STRESS
+- MEMORY_STRESS
+- NODE_DRAIN
 
-Include summary tables wherever appropriate.
+Required workflow states:
 
-Provide an additional consolidated remediation matrix with these columns:
+1. Validate input.
+2. Perform pre-experiment health checks.
+3. Validate AWS resource availability and safety conditions.
+4. Optionally create a database snapshot based on the experiment type.
+5. Start continuous application health monitoring.
+6. Start the selected AWS FIS experiment.
+7. Capture the FIS experiment ID.
+8. Monitor experiment execution until completion, failure or timeout.
+9. Collect infrastructure and application metrics.
+10. Validate EKS node and pod recovery.
+11. Validate database and application recovery.
+12. Generate consolidated execution results.
+13. Store the report and supporting evidence in S3.
+14. Notify the execution outcome.
 
-| Flaw ID | CWE | Severity | Affected Component | Root Cause | Proposed Fix | Change Category | Framework Upgrade Required | Functional Impact | Priority | Testing Required |
+Requirements:
 
-# 8. Implementation Roadmap
+- Use retry and catch handling.
+- Implement explicit timeouts.
+- Record inputs, outputs and timestamps for each state.
+- Separate FIS execution status from application resilience status.
+- Never report PASS solely because FIS completed successfully.
+- Ensure the workflow cannot start an experiment when pre-checks fail.
+- Ensure failure paths capture evidence before ending.
+- Use least-privilege IAM permissions.
 
-Organise the remediation into logical batches:
+First inspect existing project conventions and propose the required file structure.
 
-Batch 1: Independent low-risk fixes.
-Batch 2: Minor code-level security fixes.
-Batch 3: Dependency and library upgrades.
-Batch 4: Moderate code changes.
-Batch 5: Major framework or architectural changes.
+Do not modify files yet.
 
-Identify dependencies between remediation activities.
+Provide the Step Functions ASL definition and supporting Lambda design.
 
-Recommend which changes can safely be implemented independently and which should be grouped together.
 
-# 9. Strict Rules
+Stage D – Implementation and code review
+Once the designs are approved, ask Copilot to implement one component at a time.
 
-- Do not modify the application.
-- Do not implement any fixes.
-- Do not assume a framework upgrade is the only solution.
-- Do not recommend unnecessary refactoring.
-- Do not introduce new libraries without justification.
-- Do not change existing application functionality.
-- Do not make assumptions about application behaviour without examining the relevant code.
-- Do not claim a vulnerability is fixed without evidence.
-- Clearly identify findings where additional information is required.
-- Reference actual source files, classes, methods and line numbers wherever possible.
-- If the available Veracode report or source code is incomplete, explicitly document the limitation.
+For example:
 
-# Final Instruction
+Implement the approved C08 dynamic AZ selection and pre-experiment validation design.
 
-Perform a thorough, evidence-based assessment and generate the report.
+Before making changes:
 
-The report must be understandable to both senior technical architects and development team members.
+1. List the files you intend to create or modify.
+2. Explain the purpose of each change.
+3. Identify any new IAM permissions.
+4. Identify infrastructure changes and potential risks.
 
-The primary objective is to achieve Veracode compliance with the minimum necessary code changes and the lowest possible risk to existing application functionality.
+Implementation requirements:
 
-Stop after generating the assessment report. Do not proceed with implementation.
+- Follow existing repository conventions.
+- Reuse existing AWS clients and utilities wherever possible.
+- Add configurable parameters.
+- Add structured logging.
+- Add error handling.
+- Add unit tests.
+- Add configuration validation.
+- Do not hardcode account IDs, regions, cluster names or Availability Zones.
+- Do not execute AWS infrastructure changes.
+- Do not start FIS experiments.
+
+After implementation, provide a summary of changed files, test results and outstanding manual configuration steps.
+
+These four prompts establish a controlled workflow: understand → design → implement → validate.
+5. A few technical decisions we need to make
+Before writing actual implementation code, I want to avoid making assumptions about your environment.
+
+These are the important questions:
