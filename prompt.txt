@@ -1,3 +1,23 @@
+1. Complete AZ failure simulation (C08)
+Previously, C08 mainly tested worker-node interruptions. Today, the team clarified that the experiment should simulate an AZ becoming unavailable, covering all relevant core and worker pods/processes and applications in that AZ, with recovery in another AZ.
+2. Application must remain available
+The team emphasized that AZ failure and database failover are the two priority scenarios. Application availability must be validated throughout these tests. CPU/memory pressure and node drain are additional scenarios.
+3. AWS Step Functions orchestration
+A new proposal is to introduce Step Functions to coordinate:
+Pre-experiment checks and optional database snapshot.
+FIS experiment execution.
+Recovery and health verification.
+Step-by-step inputs, outputs, timestamps, and success/failure status.
+A consolidated execution and audit report.
+The existing process relies on manually collecting screenshots and evidence.
+
+AZ failure Dynamic AZ selection Simulate a complete AZ failure affecting core and worker workloads
+Recovery Verify EKS node and pod recovery Validate workload failover and application availability in another healthy AZ
+Application testing Primarily infrastructure-level validation Validate APIs and application functionality during failure and recovery
+Monitoring Capture metrics and recovery time Correlate infrastructure events with application-level impact
+Automation Configurable FIS YAML and experiment execution Explore end-to-end orchestration using Step Functions, including prechecks and reporting
+
+
 Stage A – Repository discovery
 Open your existing FIS project in VS Code and use Copilot Chat in Agent or Ask mode, depending on the task.
 
