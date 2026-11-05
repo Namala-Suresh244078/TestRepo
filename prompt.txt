@@ -1,201 +1,285 @@
-1. Complete AZ failure simulation (C08)
-Previously, C08 mainly tested worker-node interruptions. Today, the team clarified that the experiment should simulate an AZ becoming unavailable, covering all relevant core and worker pods/processes and applications in that AZ, with recovery in another AZ.
-2. Application must remain available
-The team emphasized that AZ failure and database failover are the two priority scenarios. Application availability must be validated throughout these tests. CPU/memory pressure and node drain are additional scenarios.
-3. AWS Step Functions orchestration
-A new proposal is to introduce Step Functions to coordinate:
-Pre-experiment checks and optional database snapshot.
-FIS experiment execution.
-Recovery and health verification.
-Step-by-step inputs, outputs, timestamps, and success/failure status.
-A consolidated execution and audit report.
-The existing process relies on manually collecting screenshots and evidence.
+# C08 – Complete AWS Availability Zone Failure Simulation
 
-AZ failure Dynamic AZ selection Simulate a complete AZ failure affecting core and worker workloads
-Recovery Verify EKS node and pod recovery Validate workload failover and application availability in another healthy AZ
-Application testing Primarily infrastructure-level validation Validate APIs and application functionality during failure and recovery
-Monitoring Capture metrics and recovery time Correlate infrastructure events with application-level impact
-Automation Configurable FIS YAML and experiment execution Explore end-to-end orchestration using Step Functions, including prechecks and reporting
+Act as a Senior AWS Cloud Architect, EKS/Kubernetes Architect, and Chaos Engineering Specialist.
 
+## Business objective
 
-Stage A – Repository discovery
-Open your existing FIS project in VS Code and use Copilot Chat in Agent or Ask mode, depending on the task.
+We need to implement C08 – Complete Availability Zone (AZ) Failure Simulation using AWS Fault Injection Simulator (FIS).
 
-Act as a Senior AWS Solutions Architect and Chaos Engineering Specialist.
+The existing C08 implementation primarily interrupts EKS worker nodes. This is no longer sufficient.
 
-I am working on an existing AWS Fault Injection Simulator (FIS) implementation.
+The revised requirement is to simulate an entire Availability Zone becoming unavailable and demonstrate that the platform continues operating using the surviving Availability Zones.
 
-My team has requested the following enhancements:
+## Current environment
 
-1. Complete Availability Zone failure simulation (C08), affecting relevant EKS core and worker workloads.
-2. Application availability must be validated throughout AZ failure and database failover.
-3. Database failover testing.
-4. AWS Step Functions orchestration for pre-checks, optional database snapshot, FIS execution, recovery verification and reporting.
-5. Automated evidence collection instead of manual screenshots.
-6. Additional CPU, memory and node drain experiments.
+- AWS EKS cluster with EC2 worker nodes.
+- Karpenter manages worker-node provisioning through NodePools.
+- AWS Aurora PostgreSQL.
+- AWS CloudWatch for monitoring.
+- Existing AWS FIS YAML/JSON experiment templates.
+- Initial implementation and testing must be performed in QA/non-production.
+- Infrastructure as Code approach is currently unknown.
 
-TASK:
+Important existing behaviour:
+When we disrupt EKS nodes using FIS and target specific tags, Karpenter automatically provisions replacement nodes. We need to ensure that replacement capacity is provisioned exclusively in healthy AZs during the experiment.
 
-Perform a comprehensive read-only analysis of this repository.
+## Expected C08 behaviour
 
-Identify:
+Assume the cluster operates across AZ-A, AZ-B and AZ-C.
 
-- Existing FIS experiment templates and YAML/JSON configurations.
-- Existing C08 implementation and its current fault injection mechanism.
-- AWS services and resources referenced.
-- EKS cluster configuration and deployment manifests.
-- Core and worker workload definitions.
-- Availability Zone selection and targeting logic.
-- IAM roles and policies.
-- CloudWatch alarms and monitoring configurations.
-- Existing scripts and automation.
-- Terraform, CloudFormation or CDK configurations, if present.
-- Existing application health checks and API tests.
-- Existing reporting and evidence collection mechanisms.
+When AZ-A is selected for disruption:
 
-For each finding, provide:
-1. File path and relevant code/configuration reference.
-2. Current implementation behaviour.
-3. Identified gaps against the new requirements.
-4. Recommended implementation changes.
-5. Dependencies and potential risks.
+1. Simulate AZ-A becoming unavailable using a technically supported FIS experiment.
+2. Ensure relevant application workloads and infrastructure components in AZ-A are affected.
+3. Prevent new workload capacity from being provisioned in AZ-A during the experiment.
+4. Karpenter should provision replacement EC2 worker nodes only in AZ-B/AZ-C.
+5. Kubernetes should reschedule affected application pods into the surviving AZs.
+6. Application traffic should be served through healthy AZs.
+7. Core platform services and application dependencies should remain operational.
+8. Aurora PostgreSQL should remain accessible, including appropriate database failover/reconnection behaviour where applicable.
+9. CloudWatch should provide evidence of the failure, recovery and application availability.
+10. After the experiment, restore the environment and verify normal operations.
 
-Also identify information that cannot be established from the repository and needs AWS environment verification.
+## Critical technical investigation
 
-IMPORTANT:
-- Do not modify any files.
-- Do not execute AWS commands that change infrastructure.
-- Do not start any FIS experiments.
-- Do not make assumptions where evidence is unavailable.
+Do not assume that terminating worker nodes is equivalent to AZ failure.
 
-Produce a structured technical assessment and a phased implementation plan.
+Investigate:
 
+- AWS FIS supported AZ disruption scenarios and actions.
+- Whether the selected experiment genuinely simulates AZ unavailability or only selected resource failures.
+- AWS Application Recovery Controller (ARC) Zonal Shift and its suitability for traffic evacuation.
+- Karpenter support for zonal shift and exclusion of an impaired AZ.
+- Karpenter NodePool topology constraints and EC2 subnet/AZ selection.
+- EKS control-plane availability versus worker-plane availability.
+- Core add-ons, system pods, DNS, networking and ingress.
+- ALB/NLB and application traffic routing.
+- Aurora PostgreSQL multi-AZ architecture and failover behaviour.
 
-What I expect from Copilot: A report explaining what already exists, what is missing and which files need changes.
+Do not assume that ARC Zonal Shift alone makes an AZ unavailable. Distinguish traffic evacuation from actual infrastructure disruption.
 
-Don't proceed to implementation until we review that report.
+## Required deliverables
 
-Stage B – C08 technical design
-Once Copilot understands the repository, give it this prompt.
+1. Analyse the existing C08 implementation.
+2. Identify gaps between existing behaviour and the new requirement.
+3. Propose a technically feasible AZ failure architecture.
+4. Explain the FIS actions, targets, stop conditions and recovery sequence.
+5. Explain how Karpenter will avoid provisioning in the disrupted AZ.
+6. Identify application and platform components that need validation.
+7. Provide an implementation plan.
+8. Identify changes needed in existing YAML/JSON templates.
+9. Provide pre-experiment and post-experiment validation.
+10. Define measurable success criteria.
 
+## Mandatory safety rules
 
-Act as an AWS Chaos Engineering Architect.
+- Start in read-only analysis mode.
+- Do not modify existing templates or infrastructure.
+- Do not execute AWS FIS experiments.
+- Do not terminate resources.
+- Do not assume cluster names, subnet IDs, AZ IDs, IAM permissions or resource tags.
+- Identify missing information explicitly.
+- Never claim complete AZ failure if only EC2 worker nodes have been interrupted.
+- Obtain approval before implementation or execution.
 
-Based on the existing repository analysis, design the enhanced C08 Complete Availability Zone Failure experiment.
+First return an architecture assessment and gap analysis. Do not start coding until the proposed design has been reviewed.
 
-Requirements:
+@@@@@@@@@@@@@@@@@@@@
+Act as a Senior AWS FIS and Kubernetes Engineer.
 
-1. Dynamically discover eligible Availability Zones used by the EKS worker nodes.
-2. Select one eligible AZ using a configurable selection strategy.
-3. Identify all relevant core and worker workloads in the selected AZ.
-4. Evaluate AWS FIS AZ Availability: Power Interruption as the preferred built-in scenario where supported.
-5. Identify any custom FIS actions required to cover gaps.
-6. Validate that workloads in other AZs have adequate capacity.
-7. Validate EKS node recovery and pod rescheduling.
-8. Validate application availability continuously during the experiment.
-9. Capture recovery time and infrastructure events.
-10. Implement CloudWatch stop conditions and pre-execution safety checks.
+I want you to investigate our existing C08 AZ failure experiment implementation.
+
+Our new requirement is complete AZ failure simulation, not just worker-node interruption.
+
+### Tasks
+
+1. Locate all existing C08-related files.
+2. Identify the existing FIS experiment templates (YAML/JSON).
+3. Identify all actions and targets currently configured.
+4. Identify resource targeting mechanisms:
+   - Resource IDs
+   - Resource tags
+   - EKS cluster references
+   - Availability Zone filters
+   - Karpenter NodePool labels
+5. Identify how the existing experiment selects EC2 instances.
+6. Identify whether the current implementation targets ALL nodes or only selected nodes.
+7. Identify existing stop conditions and CloudWatch alarms.
+8. Identify experiment duration and recovery configuration.
+9. Identify dependencies on Step Functions, Lambda, IAM roles or other orchestration components.
+10. Identify whether the current implementation can distinguish healthy and disrupted AZs.
+
+### Special investigation
+
+Our Karpenter controller automatically provisions replacement nodes when existing nodes are disrupted.
+
+Investigate whether the current experiment allows Karpenter to create replacement nodes in the same AZ being disrupted.
+
+Determine whether the existing NodePool configuration supports:
+- AZ exclusion.
+- Topology constraints.
+- Subnet restrictions.
+- Healthy-AZ-only provisioning.
+
+### Output
 
 Produce:
 
-- Proposed architecture.
-- Experiment execution sequence.
-- FIS template design.
-- Target selection strategy.
-- Required IAM permissions.
-- Required AWS resource tags.
-- Kubernetes prerequisites.
-- Application validation strategy.
-- Recovery validation strategy.
-- Failure handling and rollback approach.
+A. Existing implementation architecture.
 
-Identify unsupported workloads and stateful workload risks.
+B. File-by-file explanation of C08.
 
-Do not modify files or execute experiments.
+C. Existing experiment execution flow.
 
-Provide implementation recommendations specific to the existing repository.
+D. Current limitations.
 
-Stage C – Step Functions implementation
-Only after C08 design is reviewed:
+E. Exact files and configurations requiring changes.
 
-Act as a Senior AWS Serverless Architect.
+F. Missing environment information.
 
-Design an AWS Step Functions Standard Workflow to orchestrate the existing AWS FIS experiments.
+G. Recommended changes, without implementing them.
 
-The workflow must support configurable experiment types:
+Do not modify any files. Do not execute AWS commands that change infrastructure. Do not launch an experiment.
 
-- AZ_FAILURE
-- DATABASE_FAILOVER
-- CPU_STRESS
-- MEMORY_STRESS
-- NODE_DRAIN
+Support every finding with actual repository evidence. Clearly distinguish verified facts from assumptions.
 
-Required workflow states:
+@@@@@@@@@@@@@@@@@
 
-1. Validate input.
-2. Perform pre-experiment health checks.
-3. Validate AWS resource availability and safety conditions.
-4. Optionally create a database snapshot based on the experiment type.
-5. Start continuous application health monitoring.
-6. Start the selected AWS FIS experiment.
-7. Capture the FIS experiment ID.
-8. Monitor experiment execution until completion, failure or timeout.
-9. Collect infrastructure and application metrics.
-10. Validate EKS node and pod recovery.
-11. Validate database and application recovery.
-12. Generate consolidated execution results.
-13. Store the report and supporting evidence in S3.
-14. Notify the execution outcome.
+Act as an AWS Principal Solutions Architect specialising in EKS, Karpenter, AWS FIS, AWS ARC and high availability.
 
-Requirements:
+Design the technical architecture for C08 – Complete AZ Failure Simulation.
 
-- Use retry and catch handling.
-- Implement explicit timeouts.
-- Record inputs, outputs and timestamps for each state.
-- Separate FIS execution status from application resilience status.
-- Never report PASS solely because FIS completed successfully.
-- Ensure the workflow cannot start an experiment when pre-checks fail.
-- Ensure failure paths capture evidence before ending.
-- Use least-privilege IAM permissions.
+### Scenario
 
-First inspect existing project conventions and propose the required file structure.
+Our EKS environment runs across multiple Availability Zones.
 
-Do not modify files yet.
+We want to simulate AZ-A becoming unavailable.
 
-Provide the Step Functions ASL definition and supporting Lambda design.
+Expected outcome:
+- AZ-A workloads become unavailable.
+- Traffic moves to AZ-B/AZ-C.
+- Karpenter provisions replacement capacity only in healthy AZs.
+- Kubernetes reschedules application pods.
+- Applications continue operating.
+- Aurora PostgreSQL remains accessible.
+- No replacement worker nodes are provisioned in AZ-A during the experiment.
 
+### Analyse these areas
 
-Stage D – Implementation and code review
-Once the designs are approved, ask Copilot to implement one component at a time.
+**1. AWS FIS**
+- Which supported FIS experiment templates/actions can simulate an AZ disruption?
+- What resources are actually affected?
+- Does the action affect EC2 instances, networking, load balancing or other services?
+- What are the limitations?
+- Can we demonstrate a complete AZ failure without claiming that AWS has physically shut down an AZ?
 
-For example:
+**2. AWS ARC**
+- Explain Zonal Shift.
+- Explain how traffic evacuation works.
+- Explain whether it is required for this scenario.
+- Explain how it interacts with ALB and EKS workloads.
+- Explain how it differs from infrastructure failure simulation.
 
-Implement the approved C08 dynamic AZ selection and pre-experiment validation design.
+**3. Karpenter**
+- Explain how to prevent provisioning in AZ-A.
+- Assess supported Karpenter zonal shift integration for our installed version.
+- Explain ENABLE_ZONAL_SHIFT / --enable-zonal-shift only if supported by the installed version.
+- Identify IAM permissions and NodePool configuration changes.
+- Explain how to verify that replacement EC2 instances are launched exclusively in healthy AZs.
 
-Before making changes:
+**4. EKS**
+- Worker nodes versus managed control plane.
+- Core system pods and application pods.
+- CoreDNS, CNI, ingress and other critical components.
+- Pod topology spread constraints.
+- PodDisruptionBudgets.
+- Deployment replicas and anti-affinity.
+- Multi-AZ capacity requirements.
 
-1. List the files you intend to create or modify.
-2. Explain the purpose of each change.
-3. Identify any new IAM permissions.
-4. Identify infrastructure changes and potential risks.
+**5. Aurora PostgreSQL**
+- Writer and reader placement.
+- Multi-AZ failover.
+- Application connection recovery.
+- Potential database availability bottlenecks.
 
-Implementation requirements:
+**6. Traffic management**
+- ALB/NLB behaviour.
+- Target group health checks.
+- Cross-zone load balancing.
+- Traffic routing to healthy AZs.
+
+### Deliverables
+
+1. Proposed end-to-end architecture.
+2. Failure sequence diagram.
+3. Component impact matrix.
+4. Required AWS services and permissions.
+5. Required EKS/Karpenter changes.
+6. Risks and limitations.
+7. Recovery sequence.
+8. Measurable acceptance criteria.
+
+Do not make unsupported assumptions about our installed versions or AWS configuration. Identify what must be inspected before implementation.
+
+Do not execute any experiments or make infrastructure changes.
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@
+Act as a Senior AWS DevOps and Platform Engineer.
+
+Implement the approved C08 – Complete AZ Failure Simulation design in our existing repository.
+
+You have access to the existing FIS YAML/JSON templates and related orchestration code.
+
+### Objective
+
+Implement an experiment that simulates AZ-A becoming unavailable and validates application recovery in AZ-B/AZ-C.
+
+### Implementation requirements
+
+1. Preserve the existing experiment structure wherever possible.
+2. Update the C08 FIS experiment definition based on the approved architecture.
+3. Ensure AZ selection is configurable.
+4. Ensure resource selection is restricted to the intended AZ.
+5. Implement the approved mechanism to prevent new Karpenter nodes from provisioning in the disrupted AZ.
+6. Ensure replacement capacity is provisioned only in healthy AZs.
+7. Ensure application pods can be rescheduled into healthy AZs.
+8. Include validation of core platform components and application workloads.
+9. Include Aurora PostgreSQL connectivity and recovery validation.
+10. Integrate CloudWatch monitoring and experiment stop conditions.
+11. Implement recovery and cleanup procedures.
+12. Maintain compatibility with existing experiment orchestration.
+
+### Important Karpenter requirement
+
+Do not simply terminate EC2 instances and assume that Karpenter will automatically recover the application in another AZ.
+
+The implementation must verify:
+- The disrupted AZ is excluded from provisioning.
+- Healthy AZs have sufficient capacity.
+- Replacement nodes are actually created in healthy AZs.
+- Application pods are successfully scheduled there.
+- No new replacement nodes appear in the disrupted AZ during the experiment.
+
+### Code quality
 
 - Follow existing repository conventions.
-- Reuse existing AWS clients and utilities wherever possible.
-- Add configurable parameters.
-- Add structured logging.
-- Add error handling.
-- Add unit tests.
-- Add configuration validation.
-- Do not hardcode account IDs, regions, cluster names or Availability Zones.
-- Do not execute AWS infrastructure changes.
-- Do not start FIS experiments.
+- Avoid unnecessary architectural changes.
+- Reuse existing IAM roles and orchestration where appropriate.
+- Document new configuration parameters.
+- Add validation and error handling.
+- Add tests for selection, validation and recovery logic.
+- Do not hardcode account-specific resource identifiers.
 
-After implementation, provide a summary of changed files, test results and outstanding manual configuration steps.
+### Deliverables
 
-These four prompts establish a controlled workflow: understand → design → implement → validate.
-5. A few technical decisions we need to make
-Before writing actual implementation code, I want to avoid making assumptions about your environment.
+1. Modified files.
+2. Explanation of each change.
+3. Updated FIS template.
+4. Updated Karpenter configuration, if required.
+5. IAM permission changes, if required.
+6. Automated validation scripts.
+7. Test cases.
+8. Deployment instructions.
+9. Rollback instructions.
 
-These are the important questions:
+Do not execute AWS FIS experiments or destructive AWS operations. Stop and report if the approved architecture cannot be implemented safely with the available configuration.
